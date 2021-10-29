@@ -1,0 +1,19 @@
+{
+  "num_epochs": 500,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "num_neurons": 128,
+  "n_hidden_layers": 2,
+  "drop_out_rate": 0.5,
+  "use_lr_scheduler": "True",
+  "lr_scheduler_mode": "triangular",
+  "max_lr": 0.03,
+  "base_lr": 0.001,
+  "step_size_up": 120,
+  "chemception_name": "Chemception_Small",
+  "patience": 50,
+  "rand_seed": 41,
+  "loss_keras":"binary_crossentropy",
+  "optimizer_keras": "RMSprop"
+}
+

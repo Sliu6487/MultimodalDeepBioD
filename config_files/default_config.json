@@ -1,0 +1,20 @@
+{
+  "transform": true,
+  "epochs": 500,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "n_neurons": 128,
+  "n_hidden_layers": 2,
+  "drop_out_rate": 0.5,
+  "use_lr_scheduler": true,
+  "lr_scheduler_mode": "triangular",
+  "step_size_up": null,
+  "max_lr": 0.03,
+  "base_lr": 0.001,
+  "chemception_name": "Chemception_Small",
+  "last_layers": [2, 128, 64, 32, 1],
+  "last_dnn_drop_out_rate": 0.5,
+  "emb_section": -1,
+  "emb_layer": -1
+}
+
