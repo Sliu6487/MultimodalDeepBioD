@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from IPython.display import display
 from ipywidgets import IntProgress
+from torchvision import transforms
 
 from train.metrics import clf_err_rate, get_accuracy
 
@@ -12,7 +13,7 @@ from train.metrics import clf_err_rate, get_accuracy
 def train_model(epochs, scheduler,
                 train_loader, val_loader,
                 model, optimizer, criterion,
-                device='cpu'):
+                device='cpu', rotate=True):
     best_model = None
     best_val_metric = 1000
     hist_accuracy_train = []
@@ -26,6 +27,7 @@ def train_model(epochs, scheduler,
 
     train_len = len(train_loader.dataset)
     val_len = len(val_loader.dataset)
+    rotator = transforms.RandomRotation(degrees=(0, 180))
     # train_loader.dataset.tensors[1].shape[0]
     # val_loader.dataset.tensors[1].shape[0]
     # print("train_len, val_len:",train_len,val_len)
@@ -42,6 +44,9 @@ def train_model(epochs, scheduler,
         y_pred = torch.tensor(np.empty((train_len, 1))).float().to(device)
         y_true = torch.tensor(np.empty((train_len, 1))).float().to(device)
         for x_train, y_train in train_loader:
+            if rotate & (len(x_train.shape) == 4):
+                # random rotate image inputs
+                x_train = rotator(x_train)
             batch_size = y_train.shape[0]
             optimizer.zero_grad()
             outputs = model(x_train.to(device))
@@ -113,13 +118,15 @@ def train_model(epochs, scheduler,
 def train_multi_model(epochs, scheduler,
                       train_loader, val_loader,
                       model, optimizer, criterion,
-                      device='cpu'):
+                      device='cpu', rotate=True):
     best_model = None
     best_val_metric = 1000
     hist_metrics_train = []
     hist_losses_train = []
     hist_metrics_val = []
     hist_losses_val = []
+
+    rotator = transforms.RandomRotation(degrees=(0, 180))
 
     # instantiate progress bar
     print(f'{epochs} epochs...')
@@ -135,6 +142,8 @@ def train_multi_model(epochs, scheduler,
         for dataset1, dataset2 in train_loader:
             model.train()
             x_train_img = dataset1[0].to(device)
+            if rotate:
+                x_train_img = rotator(x_train_img)
             x_train_tbl = dataset2[0].to(device)
             y_train = dataset1[1].to(device)
             batch_size = y_train.shape[0]

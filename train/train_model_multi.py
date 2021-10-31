@@ -63,7 +63,7 @@ class train_model_multi:
 
         return model.to(self.device)
 
-    def train(self, model_number, transform, epochs=None):
+    def train(self, model_number, transform, epochs=None, rotate=True):
         if epochs:
             # provide an option to pass epochs from outside
             self.config['epochs'] = epochs
@@ -114,7 +114,7 @@ class train_model_multi:
         print(f"Training model {model_number}...")
 
         arguments = [self.config['epochs'], scheduler, train_loader, val_loader,
-                     model, optimizer, criterion, self.device]
+                     model, optimizer, criterion, self.device, rotate]
         if model_number != 3:
             results = train_model(*arguments)
         else:
