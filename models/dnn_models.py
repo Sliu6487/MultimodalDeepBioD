@@ -1,5 +1,6 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+
 
 class MLP_DNN(nn.Module):
 
@@ -30,4 +31,3 @@ class MLP_DNN(nn.Module):
             else:
                 out = torch.sigmoid(linear_transform(x))
         return out
-

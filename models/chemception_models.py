@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from models.chemception_blocks import Stem, ReductionA, ReductionB
+
 from models.chemception_blocks import InceptionResnetA, InceptionResnetB, InceptionResnetC
+from models.chemception_blocks import Stem, ReductionA, ReductionB
 
 
 class Chemception(nn.Module):
@@ -64,26 +65,26 @@ class Chemception(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def features(self, input):
-        # print('input:',input.shape)
+        # print('input:', input.shape)  # [batch, 4, 80, 80]
         x = self.stem(input)
-        # print('stem shape',x.shape)
+        # print('stem shape', x.shape)  # [batch, 16, 39, 39]
         x = self.inceptionA(x)
-        # print('ceptA out shape',x.shape)
+        # print('ceptA out shape', x.shape)  # [batch, 16, 39, 39]
         x = self.reductionA(x)
-        # print('reductA out shape',x.shape)
+        # print('reductA out shape', x.shape)  # [batch, 64, 19, 19]
         x = self.inceptionB(x)
-        # print('ceptB out shape',x.shape)
-        x = self.reductionB(x)  # [126, 9, 9]
-        # print('reductB out shape',x.shape)
+        # print('ceptB out shape', x.shape)  # [batch, 64, 19, 19]
+        x = self.reductionB(x)
+        # print('reductB out shape', x.shape)  # [batch, 126, 9, 9]
         x = self.inceptionC(x)
-        # print('inceptC out shape',x.shape)
+        # print('inceptC out shape', x.shape)  # [batch, 126, 9, 9]
         return x
 
     def logits(self, features):
-        x = self.avg_poolingC(features)  # [126, 1, 1]
-        # print('global avg_pool out shape',x.shape)
+        x = self.avg_poolingC(features)  # [batch, 126, 1, 1]
+        # print('global avg_pool out shape', x.shape)
         x = x.view(x.size(0), -1)
-        # print('last linear in shape',x.shape)
+        # print('last linear in shape', x.shape)  # [batch,  126]
         x = self.last_linear(x)
         x = self.sigmoid(x)
         return x
@@ -136,7 +137,6 @@ class Chemception_Small(nn.Module):
         self.mode = mode
         self.augment = augment
 
-
         # InceptionResnetA
         # InceptionResnetB
         # InceptionResnetC
@@ -145,19 +145,19 @@ class Chemception_Small(nn.Module):
 
         # Modules
         self.stem = Stem(self.base_filters, self.input_channels)
-        self.inceptionA = InceptionResnetA(self.base_filters,16)
-        self.avg_poolingC = nn.AvgPool2d(kernel_size=(39,39), stride=(1,1))
-        self.last_linear = nn.Linear(16, n_classes) #[c]
+        self.inceptionA = InceptionResnetA(self.base_filters, 16)
+        self.avg_poolingC = nn.AvgPool2d(kernel_size=(39, 39), stride=(1, 1))
+        self.last_linear = nn.Linear(16, n_classes)  # [c]
 
     def features(self, x):
         # print('input:',input.shape) #[4,80,80]
-        x = self.stem(x) # [16, 39, 39]
+        x = self.stem(x)  # [16, 39, 39]
         # print('stem shape',x.shape)
-        x = self.inceptionA(x) #[16, 39, 39]
+        x = self.inceptionA(x)  # [16, 39, 39]
         return x
 
     def logits(self, x):
-        x = self.avg_poolingC(x) #[16, 1, 1]
+        x = self.avg_poolingC(x)  # [16, 1, 1]
         # print('global avg_pool out shape',x.shape)
         # print('linear input size:', x.shape)
         x = x.reshape(x.size(0), -1)

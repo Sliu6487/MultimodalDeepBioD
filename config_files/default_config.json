@@ -12,7 +12,13 @@
   "max_lr": 0.03,
   "base_lr": 0.001,
   "chemception_name": "Chemception_Small",
-  "last_layers": [2, 128, 64, 32, 1],
+  "last_layers": [
+    2,
+    128,
+    64,
+    32,
+    1
+  ],
   "last_dnn_drop_out_rate": 0.5,
   "emb_section": -1,
   "emb_layer": -1
