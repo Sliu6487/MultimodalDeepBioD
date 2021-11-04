@@ -1,7 +1,10 @@
 {
-  "transform": true,
+  "_comment": "Rotate mini-batch doesn't transform tensors into images. It's better.",
+  "transform": false,
+  "rotate": true,
   "epochs": 500,
   "batch_size": 32,
+  "early_stop": true,
   "learning_rate": 0.001,
   "n_neurons": 128,
   "n_hidden_layers": 2,
@@ -11,16 +14,15 @@
   "step_size_up": null,
   "max_lr": 0.03,
   "base_lr": 0.001,
-  "chemception_name": "Chemception_Small",
-  "last_layers": [
-    2,
+  "n_inception_blocks": 1,
+  "last_dnn_hidden_layers": [
     128,
     64,
-    32,
-    1
+    32
   ],
   "last_dnn_drop_out_rate": 0.5,
-  "emb_section": -1,
-  "emb_layer": -1
+  "emb_chemception_section": -1,
+  "emb_mlp_layer": -1,
+  "fusion": "concat"
 }
 

@@ -1,12 +1,12 @@
+import copy
 import math
 
 import torch
 
 from helpers.data_helpers import create_data_loader
-from helpers.model_helpers import copy_freeze_parameters
-from models.chemception_models import Chemception, Chemception_Small
-from models.deepBoid import DeepBioD
-from models.dnn_models import MLP_DNN
+from models.chemception_models import Chemception
+from models.fusion_model import Fusion_Model
+from models.dnn_models import MLP_DNN, CLF_DNN
 from train.training_functions import train_model, train_multi_model
 
 
@@ -31,51 +31,59 @@ class train_model_multi:
 
     def get_model(self, model_number):
         model = None
-        if model_number == 3:
-            if self.trained_models['model_trained1'] is None:
-                raise ValueError('Train model1 first!')
-            elif self.trained_models['model_trained2'] is None:
-                raise ValueError('Train model2 first!')
 
-            model3 = DeepBioD(chemception_name=self.config['chemception_name'],
-                              num_neurons=self.config['n_neurons'],
-                              num_hidden_layers=self.config['n_hidden_layers'],
-                              first_dnn_drop_out_rate=self.config['drop_out_rate'],
-                              last_layers=self.config['last_layers'],
-                              last_dnn_drop_out_rate=self.config['last_dnn_drop_out_rate'])
-
-            # todo: be able to customize trainable layer
-            model = copy_freeze_parameters(self.trained_models['model_trained1'],
-                                           self.trained_models['model_trained2'],
-                                           model3=model3,
-                                           emb_section=self.config['emb_section'],
-                                           emb_layer=self.config['emb_layer'])
-        elif model_number == 1:
-            if self.config['chemception_name'] == 'Chemception_Small':
-                model = Chemception_Small()
-            elif self.config['chemception_name'] == 'Chemception':
-                model = Chemception()
+        if model_number == 1:
+            model = Chemception(n_inception_blocks=self.config['n_inception_blocks'])
 
         elif model_number == 2:
             model = MLP_DNN(num_neurons=self.config['n_neurons'],
                             num_hidden_layers=self.config['n_hidden_layers'],
                             drop_out_rate=self.config['drop_out_rate'])
 
+        elif model_number == 3:
+            if self.trained_models['model_trained1'] is None:
+                raise ValueError('Train model1 first!')
+            elif self.trained_models['model_trained2'] is None:
+                raise ValueError('Train model2 first!')
+
+            fusion_model = Fusion_Model(trained_chemception=self.trained_models['model_trained1'],
+                                        trained_mlp=self.trained_models['model_trained2'],
+                                        emb_chemception_section=self.config['emb_chemception_section'],
+                                        emb_mlp_layer=self.config['emb_mlp_layer'],
+                                        fusion=self.config['fusion'])
+
+            # get fusion shape to design the layers of last classifier
+            # make input data's device the device of fusion_model
+            # fusion_model's weights device is the device of 2 trained models inside
+            fusion_model.eval()
+            _, fusion_shape = fusion_model(self.datasets['X_tr_tuple'][0][:2].to(self.device),
+                                           self.datasets['X_tr_tuple'][1][:2].to(self.device))
+
+            model = CLF_DNN(fusion_shape=fusion_shape,
+                            fusion_model=fusion_model,
+                            hidden_layers=self.config['last_dnn_hidden_layers'],
+                            drop_out_rate=self.config['last_dnn_drop_out_rate'])
+
+            # freeze fusion_model to get fixed embeddings
+            # todo: be able to customize trainable layer
+            for param in model.fusion_model.parameters():
+                param.requires_grad = False
+
         return model.to(self.device)
 
-    def train(self, model_number, transform, epochs=None, rotate=True):
+    def train(self, model_number, epochs=None, rotate=True, early_stop=True):
         if epochs:
             # provide an option to pass epochs from outside
             self.config['epochs'] = epochs
 
         train_loader, val_loader = create_data_loader(model_number=model_number,
-                                                      transform=transform,
+                                                      transform=self.config['transform'],
                                                       y_train=self.datasets['y_tr'],
                                                       y_val=self.datasets['y_val'],
                                                       X_train_tuple=self.datasets['X_tr_tuple'],
                                                       X_val_tuple=self.datasets['X_val_tuple'],
                                                       batch_size=self.config['batch_size'])
-        # check data loader just in case
+        # in case of checking data loader outside
         self.data_loaders[f'train_loader_mode{model_number}'] = train_loader
         self.data_loaders[f'val_loader_mode{model_number}'] = val_loader
 
@@ -89,7 +97,7 @@ class train_model_multi:
             # todo: better way to get length
             if model_number != 3:
                 train_len = len(train_loader.dataset)
-                val_len = len(train_loader.dataset)
+                val_len = len(val_loader.dataset)
                 # train_loader.dataset.tensors[1].shape[0]
                 # val_loader.dataset.tensors[1].shape[0]
 
@@ -114,7 +122,7 @@ class train_model_multi:
         print(f"Training model {model_number}...")
 
         arguments = [self.config['epochs'], scheduler, train_loader, val_loader,
-                     model, optimizer, criterion, self.device, rotate]
+                     model, optimizer, criterion, self.device, rotate, early_stop]
         if model_number != 3:
             results = train_model(*arguments)
         else:

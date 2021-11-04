@@ -59,3 +59,13 @@ class DeepBioD(nn.Module):
         # TODO: customize by len_combined
         output = self.clf_dnn(combined)
         return output
+
+# user case
+# model3 = DeepBioD(emb_chemception_section=self.config['emb_chemception_section'],
+#                   emb_mlp_layer=self.config['emb_mlp_layer'],
+#                   num_neurons=self.config['n_neurons'],
+#                   num_hidden_layers=self.config['n_hidden_layers'],
+#                   first_dnn_drop_out_rate=self.config['drop_out_rate'],
+#                   n_inception_blocks=self.config['n_inception_blocks'],
+#                   last_layers=self.config['last_layers'],
+#                   last_dnn_drop_out_rate=self.config['last_dnn_drop_out_rate'])
