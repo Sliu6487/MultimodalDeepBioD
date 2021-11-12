@@ -72,6 +72,7 @@ class Chemception(nn.Module):
         x = self.logits(x)
         return x
 
+
 # class Chemception(nn.Module):
 #
 #     def __init__(self,
@@ -231,5 +232,3 @@ class Chemception_Small(nn.Module):
         x = self.features(input)
         x = self.logits(x)
         return x
-
-

@@ -3,7 +3,7 @@ import json
 import torch
 
 from helpers.data_helpers import get_data
-from helpers.print_and_plot import show_training_plots
+from helpers.result_helper import show_training_plots
 from train.multimodels import MultiModels
 
 if torch.cuda.is_available():
@@ -49,7 +49,6 @@ train_multimodal.train(model_number=model_number, transform=True,
 # no accuracy and learning rate tracked
 show_training_plots(model_number=model_number, show_accuracy=False, show_lr=False,
                     train_history_dict=train_multimodal.train_history)
-
 
 # from sklearn.model_selection import KFold
 # from train.metrics import clf_err_rate

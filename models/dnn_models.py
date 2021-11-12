@@ -63,4 +63,3 @@ class CLF_DNN(nn.Module):
             else:
                 fusion = torch.sigmoid(linear_transform(fusion))
         return fusion
-

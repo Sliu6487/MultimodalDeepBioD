@@ -1,15 +1,13 @@
-import copy
 import math
 
 import torch
 
 from helpers.data_helpers import create_data_loader
 from models.chemception_models import Chemception
-from models.fusion_model import Fusion_Model
-from models.dnn_models import MLP_DNN
 from models.deepBoid import DeepBioD
+from models.dnn_models import MLP_DNN
+from models.fusion_model import Fusion_Model
 from train.training_functions import train_model, train_multi_model
-from helpers.model_helpers import freeze_layers
 
 
 class MultiModels:
@@ -52,7 +50,8 @@ class MultiModels:
                                         trained_mlp=self.trained_models['model_trained2'],
                                         emb_chemception_section=self.config['emb_chemception_section'],
                                         emb_mlp_layer=self.config['emb_mlp_layer'],
-                                        fusion=self.config['fusion'])
+                                        fusion=self.config['fusion'],
+                                        device=self.device)
 
             # get fusion shape to design the layers of last classifier
             # make input data's device the device of fusion_model
@@ -60,6 +59,8 @@ class MultiModels:
             fusion_model.eval()
             _, fusion_shape = fusion_model(self.datasets['X_tr_tuple'][0][:2].to(self.device),
                                            self.datasets['X_tr_tuple'][1][:2].to(self.device))
+            if fusion_shape is None:
+                return None
 
             model = DeepBioD(fusion_shape=fusion_shape,
                              fusion_model=fusion_model,
@@ -70,7 +71,6 @@ class MultiModels:
             # todo: be able to customize trainable layer
             for param in model.fusion_model.parameters():
                 param.requires_grad = False
-            freeze_layers(fusion_model, freeze_mlp_layers_to=self.config['freeze_mlp_layers_to'])
 
         return model.to(self.device)
 
@@ -86,12 +86,16 @@ class MultiModels:
                                                       X_train_tuple=self.datasets['X_tr_tuple'],
                                                       X_val_tuple=self.datasets['X_val_tuple'],
                                                       batch_size=self.config['batch_size'])
-        # in case of checking data loader outside
-        self.data_loaders[f'train_loader_mode{model_number}'] = train_loader
-        self.data_loaders[f'val_loader_mode{model_number}'] = val_loader
+        # # in case of checking data loader outside
+        # self.data_loaders[f'train_loader_mode{model_number}'] = train_loader
+        # self.data_loaders[f'val_loader_mode{model_number}'] = val_loader
 
         criterion = torch.nn.BCELoss()
         model = self.get_model(model_number=model_number)
+        if model is None:
+            print("No model3 because can't averge embeddings of 2 mode. ")
+            return "Can't train."
+
         optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad,
                                             model.parameters()),
                                      lr=self.config['learning_rate'])

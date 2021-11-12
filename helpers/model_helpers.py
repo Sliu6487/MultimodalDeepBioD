@@ -27,6 +27,7 @@ def freeze_layers(fusion_model,
 
     return None
 
+
 def copy_freeze_parameters(model1, model2, model3,
                            emb_section=-1, emb_layer=-1):
     """

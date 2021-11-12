@@ -3,7 +3,7 @@ import json
 import torch
 
 from helpers.data_helpers import get_data
-from helpers.print_and_plot import show_training_plots  # , print_hyper_parameters
+from helpers.result_helper import show_training_plots  # , print_hyper_parameters
 from train.multimodels import MultiModels
 
 if torch.cuda.is_available():
@@ -88,5 +88,3 @@ multi_models.train(*train_args)
 # print_hyper_parameters(train_multimodal.config)
 show_training_plots(model_number=model_number, show_accuracy=False, show_lr=False,
                     train_history_dict=multi_models.train_history)
-
-

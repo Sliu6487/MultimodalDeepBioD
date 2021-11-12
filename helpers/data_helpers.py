@@ -49,6 +49,28 @@ def get_data(data_folder_path=None, up_sample=True):
     return X_tr_img, X_val_img, X_tr_tbl, X_val_tbl, y_tr, y_val
 
 
+def upsample(X1, X2, y):
+    """
+    Up-sample positive instances.
+    """
+    pos_index = (y == 1).nonzero(as_tuple=True)[0]
+    neg_index = (y == 0).nonzero(as_tuple=True)[0]
+    pos_index = pos_index[torch.randperm(pos_index.size()[0])]
+    neg_index = neg_index[torch.randperm(neg_index.size()[0])]
+
+    diff = len(neg_index) - len(pos_index)
+    if diff > 0:
+        up_index = pos_index[:diff]
+    else:
+        up_index = neg_index[:-diff]
+
+    X1 = torch.cat((X1[up_index], X1), 0)
+    X2 = torch.cat((X2[up_index], X2), 0)
+    y = torch.cat((y[up_index], y), 0)
+
+    return X1, X2, y
+
+
 def create_data_loader(model_number,
                        X_train_tuple,
                        X_val_tuple,
