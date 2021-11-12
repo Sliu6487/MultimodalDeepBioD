@@ -3,7 +3,7 @@ import json
 import torch
 
 from helpers.data_helpers import get_data
-from helpers.result_helper import show_training_plots
+from helpers.result_helpers import show_training_plots
 from train.multimodels import MultiModels
 
 if torch.cuda.is_available():

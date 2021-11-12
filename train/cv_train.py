@@ -3,7 +3,7 @@ import torch
 from sklearn.model_selection import KFold
 
 from helpers.data_helpers import upsample
-from helpers.result_helper import show_training_plots
+from helpers.result_helpers import show_training_plots
 from train.metrics import clf_err_rate
 from train.random_search import random_search_hyper_parameters
 
