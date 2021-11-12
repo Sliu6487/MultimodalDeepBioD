@@ -139,8 +139,8 @@ class InceptionResnetA(nn.Module):
         x3 = self.conv_block3(x)
         concat_conv = torch.cat((x1, x2, x3), 1)
         x4 = self.conv_block4(concat_conv)
-        sum = x4 + x
-        out = self.last_reLu(sum)
+        sum_layer = x4 + x
+        out = self.last_reLu(sum_layer)
         # print('inception out shape', out.shape)
         return out
 
@@ -227,8 +227,8 @@ class InceptionResnetB(nn.Module):
         x2 = self.conv_block2(x)
         concat_conv = torch.cat((x1, x2), 1)
         x3 = self.conv_block3(concat_conv)
-        sum = x3 + x
-        out = self.last_reLu(sum)
+        sum_layer = x3 + x
+        out = self.last_reLu(sum_layer)
         return out
 
 
@@ -314,8 +314,8 @@ class InceptionResnetC(nn.Module):
         x2 = self.conv_block2(x)
         concat_conv = torch.cat((x1, x2), 1)
         x3 = self.conv_block3(concat_conv)
-        sum = x3 + x
-        out = self.last_reLu(sum)
+        sum_layer = x3 + x
+        out = self.last_reLu(sum_layer)
         return out
 
 

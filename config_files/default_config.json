@@ -9,7 +9,7 @@
   "n_neurons": 128,
   "n_hidden_layers": 2,
   "drop_out_rate": 0.5,
-  "use_lr_scheduler": true,
+  "use_lr_scheduler": false,
   "lr_scheduler_mode": "triangular",
   "step_size_up": null,
   "max_lr": 0.03,
@@ -23,6 +23,7 @@
   "last_dnn_drop_out_rate": 0.5,
   "emb_chemception_section": -1,
   "emb_mlp_layer": -1,
-  "fusion": "concat"
+  "fusion": "concat",
+  "freeze_mlp_layers_to": -1
 }
 

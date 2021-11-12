@@ -4,7 +4,7 @@ import torch
 
 from helpers.data_helpers import get_data
 from helpers.print_and_plot import show_training_plots
-from train.train_model_multi import train_model_multi
+from train.multimodels import MultiModels
 
 if torch.cuda.is_available():
     device = "cuda:0"
@@ -23,8 +23,8 @@ datasets = {'X_tr_tuple': (X_tr_img, X_tr_tbl),
 
 # print(X_tr_img.shape)
 
-train_multimodal = train_model_multi(config=config, device=device,
-                                     datasets=datasets)
+train_multimodal = MultiModels(config=config, device=device,
+                               datasets=datasets)
 #
 train_multimodal.config['epochs'] = 2
 

@@ -39,7 +39,6 @@ def get_data(data_folder_path=None, up_sample=True):
     y_val = y_train[val_indices]
 
     if up_sample:
-        # todo: stratified sample to the same amount by difference
         # current:   positive: 281; negative: 556
         # up sample: positive: 562; negative: 556
         pos_index = (y_tr == 1).nonzero(as_tuple=True)[0]
@@ -61,7 +60,6 @@ def create_data_loader(model_number,
     :param model_number: 3: 'multi', 2: 'table', 1: 'image'
     """
     if (model_number != 2) & transform:
-        # TODO: Check if transforms.ToPILImage() is better
         # some version of pytorch only transforms  PIL Image
         # transform = T.RandomRotation(degrees=(0, 180)) this
         transform = transforms.Compose([

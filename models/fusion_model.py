@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from models.dnn_models import MLP_DNN
-
 
 class Fusion_Model(nn.Module):
     """

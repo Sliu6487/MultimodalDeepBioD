@@ -6,11 +6,13 @@ import torch
 from helpers.data_helpers import create_data_loader
 from models.chemception_models import Chemception
 from models.fusion_model import Fusion_Model
-from models.dnn_models import MLP_DNN, CLF_DNN
+from models.dnn_models import MLP_DNN
+from models.deepBoid import DeepBioD
 from train.training_functions import train_model, train_multi_model
+from helpers.model_helpers import freeze_layers
 
 
-class train_model_multi:
+class MultiModels:
     def __init__(self, config, device, datasets):
         """
         datasets = {'X_tr_tuple': (X_tr_img, X_tr_tbl),
@@ -59,15 +61,16 @@ class train_model_multi:
             _, fusion_shape = fusion_model(self.datasets['X_tr_tuple'][0][:2].to(self.device),
                                            self.datasets['X_tr_tuple'][1][:2].to(self.device))
 
-            model = CLF_DNN(fusion_shape=fusion_shape,
-                            fusion_model=fusion_model,
-                            hidden_layers=self.config['last_dnn_hidden_layers'],
-                            drop_out_rate=self.config['last_dnn_drop_out_rate'])
+            model = DeepBioD(fusion_shape=fusion_shape,
+                             fusion_model=fusion_model,
+                             hidden_layers=self.config['last_dnn_hidden_layers'],
+                             drop_out_rate=self.config['last_dnn_drop_out_rate'])
 
             # freeze fusion_model to get fixed embeddings
             # todo: be able to customize trainable layer
             for param in model.fusion_model.parameters():
                 param.requires_grad = False
+            freeze_layers(fusion_model, freeze_mlp_layers_to=self.config['freeze_mlp_layers_to'])
 
         return model.to(self.device)
 
@@ -89,12 +92,11 @@ class train_model_multi:
 
         criterion = torch.nn.BCELoss()
         model = self.get_model(model_number=model_number)
-        optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad,
-                                           model.parameters()),
-                                    lr=self.config['learning_rate'])
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad,
+                                            model.parameters()),
+                                     lr=self.config['learning_rate'])
 
         if self.config['use_lr_scheduler']:
-            # todo: better way to get length
             if model_number != 3:
                 train_len = len(train_loader.dataset)
                 val_len = len(val_loader.dataset)

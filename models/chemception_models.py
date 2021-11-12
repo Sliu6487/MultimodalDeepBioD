@@ -17,8 +17,8 @@ class Chemception(nn.Module):
         super(Chemception, self).__init__()
 
         self.n_blocks = n_inception_blocks
-        if self.n_blocks not in [1, 2, 3, 4]:
-            raise ValueError('n_blocks has to be 1, 2, 3, or 4.')
+        if self.n_blocks not in [1, 2, 3, 4, 5]:
+            raise ValueError('n_blocks has to be 1, 2, 3, 4, or 5.')
 
         if img_spec == "engd":
             self.input_shape = (img_size, img_size, 4)
