@@ -8,7 +8,7 @@ from models.chemception_blocks import Stem, ReductionA, ReductionB
 class Chemception(nn.Module):
 
     def __init__(self,
-                 n_inception_blocks: int = 1,
+                 n_inception_blocks: int = 5,
                  img_spec: str = "engd",
                  img_size: int = 80,
                  base_filters: int = 16,
@@ -54,22 +54,36 @@ class Chemception(nn.Module):
         self.avg_pooling = nn.AvgPool2d(kernel_size=kernel_size, stride=(1, 1))
         self.last_linear = nn.Linear(linear_input, n_classes)
 
-    def features(self, x):
+    def features(self, x, emb_section):
         x = self.stem(x)
+        # print("stem out:", x.shape[1:])
+        S = len(self.inception_blocks)
+        # i = 0
+        remain_section = S + emb_section
         for transform in self.inception_blocks:
-            x = transform(x)
+            if remain_section >= 0:
+                # i += 1
+                # print('transform', i)
+                # print("before:", x.shape[1:])
+                x = transform(x)
+                # print("after:", x.shape[1:])
+                remain_section -= 1
+
         x = self.avg_pooling(x)
+        x = x.view(x.size(0), -1)
+        # print("x flatten:", x.shape[1:])
         return x
 
     def logits(self, x):
-        x = x.view(x.size(0), -1)
+        # print('last_linear')
         x = self.last_linear(x)
         x = torch.sigmoid(x)
         return x
 
-    def forward(self, x):
-        x = self.features(x)
-        x = self.logits(x)
+    def forward(self, x, emb_chemception_section=0):
+        x = self.features(x, emb_chemception_section + 1)
+        if emb_chemception_section >= -1:
+            x = self.logits(x)
         return x
 
 

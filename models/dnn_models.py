@@ -22,14 +22,21 @@ class MLP_DNN(nn.Module):
         for input_size, output_size in zip(layers, layers[1:]):
             self.hidden.append(nn.Linear(input_size, output_size))
 
-    def forward(self, x):
+        self.dropout = nn.Dropout(p=self.drop_out_rate)
+
+    def forward(self, x, emb_mlp_layer=0):
         L = len(self.hidden)
+        remain_layer = L + emb_mlp_layer
         for (l, linear_transform) in zip(range(L), self.hidden):
-            if l < L - 1:
-                x = torch.relu(linear_transform(x))
-                x = torch.dropout(x, p=self.drop_out_rate, train=True)
-            else:
-                x = torch.sigmoid(linear_transform(x))
+            if remain_layer >= 0:
+                if l < L - 1:
+                    x = torch.relu(linear_transform(x))
+                    x = self.dropout(x)
+                    remain_layer -= 1
+                    # print("transform")
+                else:
+                    x = torch.sigmoid(linear_transform(x))
+                    # print("sigmoid")
         return x
 
 
