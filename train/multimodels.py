@@ -74,7 +74,9 @@ class MultiModels:
 
         return model.to(self.device)
 
-    def train(self, model_number, epochs=None, rotate=True, early_stop=True):
+    def train(self, model_number, epochs=None,
+              rotate=True, early_stop=True,
+              cv_single_models=None):
         if epochs:
             # provide an option to pass epochs from outside
             self.config['epochs'] = epochs
@@ -90,10 +92,17 @@ class MultiModels:
         # self.data_loaders[f'train_loader_mode{model_number}'] = train_loader
         # self.data_loaders[f'val_loader_mode{model_number}'] = val_loader
 
+        if cv_single_models:
+            # if the single models were trained in 5 cv,
+            # the pairs in each cv should have a unique model3
+            self.trained_models['model_trained1'] = cv_single_models[0]
+            self.trained_models['model_trained2'] = cv_single_models[1]
+
         criterion = torch.nn.BCELoss()
         model = self.get_model(model_number=model_number)
+
         if model is None:
-            print("No model3 because can't averge embeddings of 2 mode. ")
+            print("No model3 because can't averge embeddings of 2 mode. " )
             return "Can't train."
 
         optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad,
