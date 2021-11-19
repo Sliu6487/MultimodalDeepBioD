@@ -1,7 +1,6 @@
-import warnings
-
 import torch
 import torch.nn as nn
+import warnings
 
 
 class Fusion_Model(nn.Module):
@@ -28,6 +27,10 @@ class Fusion_Model(nn.Module):
         self.device = device
         self.fusion_dict = {'emb_chemception_section_num': emb_chemception_section,
                             'emb_mlp_layer_num': emb_mlp_layer}
+
+        # no harm factor
+        alpha = torch.rand(1).to(self.device)
+        self.alpha = nn.Parameter(alpha, requires_grad=True)
 
     def get_chemception_embedding(self, x, emb_chemception_section):
         if emb_chemception_section == -2:
@@ -107,8 +110,14 @@ class Fusion_Model(nn.Module):
         chem_emb, chem_emb_neurons = self.get_chemception_embedding(x, self.emb_chemception_section)
         decpt_emb, decpt_emb_neurons = self.get_mlp_embedding(y, self.emb_mlp_layer)
 
-        if self.fusion == 'avg':
-            if chem_emb_neurons == decpt_emb_neurons:
+        if self.fusion == 'no_harm':
+            combined_emb = (1 - self.alpha) * chem_emb + self.alpha * decpt_emb
+
+        elif self.fusion == 'sum':
+            combined_emb = chem_emb + decpt_emb
+
+        elif self.fusion == 'avg':
+            if (chem_emb_neurons == decpt_emb_neurons):
                 combined_emb = (chem_emb + decpt_emb) / 2
             else:
                 warnings.warn("Mismatching shape, can't Average. Return None.")
