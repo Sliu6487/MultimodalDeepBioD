@@ -35,6 +35,6 @@ class DeepBioD(nn.Module):
                     output = torch.sigmoid(linear_transform(fusion))
         else:
             # fusion is the last layer
-            output = torch.sigmoid(fusion)
+            output = fusion
 
         return output
