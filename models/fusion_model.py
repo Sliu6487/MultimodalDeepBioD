@@ -20,8 +20,9 @@ class Fusion_Model(nn.Module):
         super(Fusion_Model, self).__init__()
 
         # Fusion
-        self.chemception = trained_chemception
-        self.mlp_decpt = trained_mlp
+        self.chemception = copy.deepcopy(trained_chemception)
+        self.mlp_decpt = copy.deepcopy(trained_mlp)
+
         self.emb_chemception_section = emb_chemception_section
         self.emb_mlp_layer = emb_mlp_layer
         self.fusion = fusion
@@ -32,6 +33,10 @@ class Fusion_Model(nn.Module):
         # no harm factor
         self.nh_factor = nn.Parameter(torch.rand(1).to(self.device),
                                       requires_grad=True)
+        self.nh_factor_mtrx = nn.Parameter(torch.rand(1, 126).to(self.device),
+                                           requires_grad=True)
+
+        self.shrink_layer = nn.Linear(252, 126).to(self.device)
 
     def forward(self, x, y):
         chem_emb = self.chemception(x, self.emb_chemception_section)
@@ -47,12 +52,27 @@ class Fusion_Model(nn.Module):
             combined_emb = (1 - self.nh_factor) * chem_emb + self.nh_factor * decpt_emb
             # print("combined_emb:", combined_emb.shape)
 
-        elif self.fusion == 'abs_no_harm':
+        elif self.fusion == 'no_harm_matrix':
+            combined_emb = (1 - self.nh_factor_mtrx) * chem_emb + self.nh_factor_mtrx * decpt_emb
+            # print("combined_emb:", combined_emb.shape)
+
+        elif self.fusion == 'no_model1':
             combined_emb = decpt_emb
             # print("combined_emb:", combined_emb.shape)
 
-        elif self.fusion == 'sum':
+        elif self.fusion == 'no_model2':
+            combined_emb = chem_emb
+
+        elif self.fusion == 'half-half':
+            # sum
             combined_emb = chem_emb + decpt_emb
+
+        elif self.fusion == 'shrink':
+            # print("chem_emb:", chem_emb.shape)
+            # print("decpt_emb:", decpt_emb.shape)
+            combined_emb = torch.cat((chem_emb, decpt_emb), 1)
+            # print('combined_emb:', combined_emb.shape)
+            combined_emb = torch.relu(self.shrink_layer(combined_emb))
 
         elif (self.fusion == 'avg'):
             if (chem_emb_neurons == decpt_emb_neurons):
@@ -73,11 +93,12 @@ class Fusion_Model(nn.Module):
             combined_emb = fusion_tensor.view(fusion_tensor.size(0), -1)
             # print('combined_emb:', combined_emb.shape) #[batch, (neuron1+1) * (neuron2+1)]
 
-        else:
-            # default as concat
+        elif self.fusion == 'concat':
             combined_emb = torch.cat((chem_emb, decpt_emb), 1)
+        else:
+            raise ValueError(f"No such fusion option as {self.fusion}")
 
-        self.fusion_dict['fusion_method'] = self.fusion
+        self.fusion_dict['fusion'] = self.fusion
         self.fusion_dict['fusion_neurons'] = combined_emb.shape[1]
         fusion_shape = combined_emb.shape[1]
 
