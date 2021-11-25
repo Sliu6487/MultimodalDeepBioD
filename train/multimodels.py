@@ -1,8 +1,10 @@
 import math
+import copy
 
 import torch
 
 from helpers.data_helpers import create_data_loader
+from helpers.model_helpers import freeze_layers
 from models.chemception_models import Chemception
 from models.deepBoid import DeepBioD
 from models.dnn_models import MLP_DNN
@@ -46,8 +48,11 @@ class MultiModels:
             elif self.trained_models['model_trained2'] is None:
                 raise ValueError('Train model2 first!')
 
-            fusion_model = Fusion_Model(trained_chemception=self.trained_models['model_trained1'],
-                                        trained_mlp=self.trained_models['model_trained2'],
+            model_trained1 = copy.deepcopy(self.trained_models['model_trained1'])
+            model_trained2 = copy.deepcopy(self.trained_models['model_trained2'])
+
+            fusion_model = Fusion_Model(trained_chemception=model_trained1,
+                                        trained_mlp=model_trained2,
                                         emb_chemception_section=self.config['emb_chemception_section'],
                                         emb_mlp_layer=self.config['emb_mlp_layer'],
                                         fusion=self.config['fusion'],
@@ -56,11 +61,20 @@ class MultiModels:
             # get fusion shape to design the layers of last classifier
             # make input data's device the device of fusion_model
             # fusion_model's weights device is the device of 2 trained models inside
-            fusion_model.eval()
-            _, fusion_shape = fusion_model(self.datasets['X_tr_tuple'][0][:2].to(self.device),
-                                           self.datasets['X_tr_tuple'][1][:2].to(self.device))
+            test_data_img = self.datasets['X_tr_tuple'][0][:2].to(self.device)
+            test_data_tbl = self.datasets['X_tr_tuple'][1][:2].to(self.device)
+
+            _, fusion_shape = fusion_model(test_data_img, test_data_tbl)
             if fusion_shape is None:
                 return None
+
+            y_1 = model_trained1(test_data_img, self.config['emb_mlp_layer'])
+            print("y_1:", y_1.shape)
+            print("fusion_model:", fusion_model.decpt_emb.shape)
+            assert torch.equal(fusion_model.chem_emb, y_1)
+
+            y_2 = model_trained2(test_data_tbl, self.config['emb_mlp_layer'])
+            assert torch.equal(fusion_model.decpt_emb, y_2)
 
             model = DeepBioD(fusion_shape=fusion_shape,
                              fusion_model=fusion_model,
@@ -69,8 +83,9 @@ class MultiModels:
 
             # freeze fusion_model to get fixed embeddings
             # todo: be able to customize trainable layer
-            for param in model.fusion_model.parameters():
-                param.requires_grad = False
+            # for param in model.fusion_model.parameters():
+            #     param.requires_grad = False
+            freeze_layers(fusion_model, self.config['freeze_mlp_layers_to'])
 
         return model.to(self.device)
 
@@ -102,7 +117,7 @@ class MultiModels:
         model = self.get_model(model_number=model_number)
 
         if model is None:
-            print("No model3 because can't averge embeddings of 2 mode. " )
+            print("No model3 because can't average embeddings of 2 mode. ")
             return "Can't train."
 
         optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad,
@@ -110,6 +125,7 @@ class MultiModels:
                                      lr=self.config['learning_rate'])
 
         if self.config['use_lr_scheduler']:
+            # todo: better way to get length
             if model_number != 3:
                 train_len = len(train_loader.dataset)
                 val_len = len(val_loader.dataset)
