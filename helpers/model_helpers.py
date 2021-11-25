@@ -5,7 +5,6 @@ import torch
 
 def freeze_layers(fusion_model,
                   freeze_mlp_layers_to=-1) -> None:
-    # todo: make this cleaner
     # MLP
     emb_mlp_layer = fusion_model.emb_mlp_layer
 
@@ -15,10 +14,10 @@ def freeze_layers(fusion_model,
         layers = fusion_model.mlp_decpt.hidden[:emb_mlp_layer + 1]
 
     if len(layers) < -freeze_mlp_layers_to:
-        freeze_mlp_layers_to = len(layers)
+        freeze_mlp_layers_to = -len(layers) - 1
 
     if freeze_mlp_layers_to == -1:
-        for param in fusion_model.mlp_decpt.hidden.parameters():
+        for param in fusion_model.mlp_decpt.parameters():
             param.requires_grad = False
     else:
         frz_indx = emb_mlp_layer + freeze_mlp_layers_to + 1
