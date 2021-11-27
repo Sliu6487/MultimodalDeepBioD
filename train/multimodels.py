@@ -93,12 +93,14 @@ class MultiModels:
 
         return model.to(self.device)
 
-    def train(self, model_number, epochs=None,
-              rotate=True, early_stop=True,
-              cv_single_models=None):
-        if epochs:
+    def train(self, model_number,use_diff_epochs=None):
+        """
+        :param use_diff_epochs: use this parameter to pass epochs when calling function
+        """
+
+        if use_diff_epochs:
             # provide an option to pass epochs from outside
-            self.config['epochs'] = epochs
+            self.config['epochs'] = use_diff_epochs
 
         train_loader, val_loader = create_data_loader(model_number=model_number,
                                                       transform=self.config['transform'],
@@ -110,12 +112,6 @@ class MultiModels:
         # # in case of checking data loader outside
         # self.data_loaders[f'train_loader_mode{model_number}'] = train_loader
         # self.data_loaders[f'val_loader_mode{model_number}'] = val_loader
-
-        if cv_single_models:
-            # if the single models were trained in 5 cv,
-            # the pairs in each cv should have a unique model3
-            self.trained_models['model_trained1'] = cv_single_models[0]
-            self.trained_models['model_trained2'] = cv_single_models[1]
 
         criterion = torch.nn.BCELoss()
         model = self.get_model(model_number=model_number)
@@ -157,7 +153,8 @@ class MultiModels:
         print(f"Training model {model_number}...")
 
         arguments = [self.config['epochs'], scheduler, train_loader, val_loader,
-                     model, optimizer, criterion, self.device, rotate, early_stop]
+                     model, optimizer, criterion, self.device,
+                     self.config['rotate'], self.config['early_stop']]
         if model_number != 3:
             results = train_model(*arguments)
         else:
