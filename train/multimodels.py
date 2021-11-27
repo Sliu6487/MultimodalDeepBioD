@@ -26,12 +26,22 @@ class MultiModels:
         self.datasets = datasets
 
         self.data_loaders = {}
-        self.trained_models = {'model_trained1': None,
-                               'model_trained2': None,
-                               'model_trained3': None}
+        self.trained_models = {
+            'model_trained1': None,
+            'model_trained2': None,
+            'model_trained3': None
+        }
+
+        self.initial_models = {
+            'model1': self.get_model(1),
+            'model2': self.get_model(2)
+        }
+
+        self.initial_models['model3'] = self.get_model(3, trained_emb=False)
+
         self.train_history = {}
 
-    def get_model(self, model_number):
+    def get_model(self, model_number, trained_emb=True):
         model = None
 
         if model_number == 1:
@@ -43,16 +53,21 @@ class MultiModels:
                             drop_out_rate=self.config['drop_out_rate'])
 
         elif model_number == 3:
-            if self.trained_models['model_trained1'] is None:
-                raise ValueError('Train model1 first!')
-            if self.trained_models['model_trained2'] is None:
-                raise ValueError('Train model2 first!')
+            if trained_emb:
+                if self.trained_models['model_trained1'] is None:
+                    raise ValueError('Train model1 first!')
+                if self.trained_models['model_trained2'] is None:
+                    raise ValueError('Train model2 first!')
 
-            model_trained1 = copy.deepcopy(self.trained_models['model_trained1'])
-            model_trained2 = copy.deepcopy(self.trained_models['model_trained2'])
+                model1 = copy.deepcopy(self.trained_models['model_trained1'])
+                model2 = copy.deepcopy(self.trained_models['model_trained2'])
 
-            fusion_model = Fusion_Model(trained_chemception=model_trained1,
-                                        trained_mlp=model_trained2,
+            else:
+                model1 = self.initial_models['model1']
+                model2 = self.initial_models['model2']
+
+            fusion_model = Fusion_Model(trained_chemception=model1,
+                                        trained_mlp=model2,
                                         emb_chemception_section=self.config['emb_chemception_section'],
                                         emb_mlp_layer=self.config['emb_mlp_layer'],
                                         fusion=self.config['fusion'],
@@ -69,15 +84,12 @@ class MultiModels:
             if fusion_shape is None:
                 return None
 
-            model_trained1.eval()
-            y_1 = model_trained1(test_data_img, self.config['emb_mlp_layer'])
-            print("y_1:", y_1.shape)
-            print("fusion_model:", fusion_model.decpt_emb.shape)
-            # todo: check why can't pass this asserting
-            # assert torch.equal(fusion_model.chem_emb,y_1)
+            model1.eval()
+            y_1 = model1(test_data_img, self.config['emb_chemception_section'])
+            assert torch.equal(fusion_model.chem_emb, y_1)
 
-            model_trained2.eval()
-            y_2 = model_trained2(test_data_tbl, self.config['emb_mlp_layer'])
+            model2.eval()
+            y_2 = model2(test_data_tbl, self.config['emb_mlp_layer'])
             assert torch.equal(fusion_model.decpt_emb, y_2)
 
             model = DeepBioD(fusion_shape=fusion_shape,
@@ -85,15 +97,11 @@ class MultiModels:
                              hidden_layers=self.config['last_dnn_hidden_layers'],
                              drop_out_rate=self.config['last_dnn_drop_out_rate'])
 
-            # freeze fusion_model to get fixed embeddings
-            # todo: be able to customize trainable layer
-            # for param in model.fusion_model.parameters():
-            #     param.requires_grad = False
             freeze_layers(fusion_model, self.config['freeze_mlp_layers_to'])
 
         return model.to(self.device)
 
-    def train(self, model_number,use_diff_epochs=None):
+    def train(self, model_number, use_diff_epochs=None):
         """
         :param use_diff_epochs: use this parameter to pass epochs when calling function
         """
