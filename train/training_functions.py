@@ -13,7 +13,9 @@ from train.metrics import clf_err_rate, get_accuracy
 def train_model(epochs, scheduler,
                 train_loader, val_loader,
                 model, optimizer, criterion,
-                device='cpu', rotate=True):
+                device='cpu', rotate=True,
+                early_stop: bool = True):
+
     best_model = None
     best_val_metric = 1000
     hist_accuracy_train = []
@@ -112,13 +114,17 @@ def train_model(epochs, scheduler,
             'hist_losses_val': hist_losses_val,
             'hist_accuracy_val': hist_accuracy_val}
 
-    return best_model, hist
+    if early_stop:
+        return best_model, hist
+    else:
+        return model, hist
 
 
 def train_multi_model(epochs, scheduler,
                       train_loader, val_loader,
                       model, optimizer, criterion,
-                      device='cpu', rotate=True):
+                      device='cpu', rotate=True,
+                      early_stop: bool = True):
     best_model = None
     best_val_metric = 1000
     hist_metrics_train = []
@@ -191,7 +197,10 @@ def train_multi_model(epochs, scheduler,
 
         if val_metric < best_val_metric:
             best_val_metric = val_metric
-            best_model = copy.deepcopy(model)
+            # best_model = copy.deepcopy(model)
+            # todo: maybe better option
+            PATH = 'best_model_checkpoint'
+            torch.save(model, PATH)
 
         # update progress bar
         f.value += 1  # signal to increment
@@ -204,4 +213,8 @@ def train_multi_model(epochs, scheduler,
             'hist_metrics_val': hist_metrics_val,
             'hist_losses_val': hist_losses_val}
 
-    return best_model, hist
+    if early_stop:
+        best_model = torch.load(PATH)
+        return best_model, hist
+    else:
+        return model, hist

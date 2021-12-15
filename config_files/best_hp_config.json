@@ -1,0 +1,27 @@
+{
+  "model1": {
+    "learning_rate": 0.0001,
+    "epochs": 150,
+    "batch_size": 32,
+    "n_inception_blocks": 5
+  },
+  "model2": {
+    "learning_rate": 6.07e-5,
+    "epochs": 600,
+    "batch_size": 64,
+    "n_hidden_layers": 2,
+    "n_neurons": 126,
+    "drop_out_rate": 0.5874
+  },
+  "model3": {
+    "learning_rate": 6.07e-5,
+    "epochs": 150,
+    "batch_size": 64,
+    "last_dnn_hidden_layers": [],
+    "last_dnn_drop_out_rate": 0.5874,
+    "emb_chemception_section": -2,
+    "emb_mlp_layer": -2,
+    "freeze_mlp_layers_to": -1,
+    "fusion": "no_harm"
+  }
+}

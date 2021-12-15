@@ -39,7 +39,6 @@ def get_data(data_folder_path=None, up_sample=True):
     y_val = y_train[val_indices]
 
     if up_sample:
-        # todo: stratified sample to the same amount by difference
         # current:   positive: 281; negative: 556
         # up sample: positive: 562; negative: 556
         pos_index = (y_tr == 1).nonzero(as_tuple=True)[0]
@@ -47,7 +46,50 @@ def get_data(data_folder_path=None, up_sample=True):
         X_tr_tbl = torch.cat((X_tr_tbl[pos_index], X_tr_tbl), 0)
         y_tr = torch.cat((y_tr[pos_index], y_tr), 0)
 
+        # more flexible:
+        # X_tr_img, X_tr_tbl, y_tr = upsample(X_tr_img, X_tr_tbl, y_tr, rand_seed=0)
+
     return X_tr_img, X_val_img, X_tr_tbl, X_val_tbl, y_tr, y_val
+
+
+def upsample(X1, X2, y, rand_seed=0):
+    """
+    Up-sample minority to the same number of majority.
+    """
+    pos_index = (y == 1).nonzero(as_tuple=True)[0]
+    neg_index = (y == 0).nonzero(as_tuple=True)[0]
+
+    torch.manual_seed(rand_seed)
+    pos_index = pos_index[torch.randperm(pos_index.size()[0])]
+    neg_index = neg_index[torch.randperm(neg_index.size()[0])]
+
+    diff = len(neg_index) - len(pos_index)
+    abs_diff = abs(diff)
+
+    if diff > 0:
+        selected_index = pos_index
+    else:
+        selected_index = neg_index
+
+    if abs_diff <= 2 * len(selected_index):
+        # print("up")
+        up_index = selected_index[:abs_diff]
+        X1 = torch.cat((X1[up_index], X1), 0)
+        X2 = torch.cat((X2[up_index], X2), 0)
+        y = torch.cat((y[up_index], y), 0)
+
+    else:
+        while abs_diff > 0:
+            # print("up")
+            up_index = selected_index[:abs_diff]
+            # print('len up_index:', len(up_index))
+            abs_diff -= len(up_index)
+            X1 = torch.cat((X1[up_index], X1), 0)
+            X2 = torch.cat((X2[up_index], X2), 0)
+            y = torch.cat((y[up_index], y), 0)
+            # print(abs_diff)
+
+    return X1, X2, y
 
 
 def create_data_loader(model_number,
@@ -61,7 +103,6 @@ def create_data_loader(model_number,
     :param model_number: 3: 'multi', 2: 'table', 1: 'image'
     """
     if (model_number != 2) & transform:
-        # TODO: Check if transforms.ToPILImage() is better
         # some version of pytorch only transforms  PIL Image
         # transform = T.RandomRotation(degrees=(0, 180)) this
         transform = transforms.Compose([

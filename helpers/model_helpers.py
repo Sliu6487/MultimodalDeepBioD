@@ -3,6 +3,55 @@ import copy
 import torch
 
 
+def freeze_layers(fusion_model,
+                  freeze_mlp_layers_to=-1) -> None:
+    # MLP
+    emb_mlp_layer = fusion_model.emb_mlp_layer
+
+    if emb_mlp_layer == -1:
+        layers = fusion_model.mlp_decpt.hidden
+    else:
+        layers = fusion_model.mlp_decpt.hidden[:emb_mlp_layer + 1]
+
+    if len(layers) < -freeze_mlp_layers_to:
+        freeze_mlp_layers_to = -len(layers) - 1
+
+    if freeze_mlp_layers_to == -1:
+        for param in fusion_model.mlp_decpt.parameters():
+            param.requires_grad = False
+    else:
+        frz_indx = emb_mlp_layer + freeze_mlp_layers_to + 1
+        # freeze before embedding layer based on freeze_mlp_layers_to
+        for layer in fusion_model.mlp_decpt.hidden[:frz_indx + 1]:
+            for param in layer.parameters():
+                param.requires_grad = False
+
+        # # freeze after embedding layer, not necessary but easier for checking
+        if emb_mlp_layer < -1:
+            for layer in fusion_model.mlp_decpt.hidden[emb_mlp_layer + 1:]:
+                for param in layer.parameters():
+                    param.requires_grad = False
+
+    fusion_model.fusion_dict['trainable_mlp_emb_layers'] = -freeze_mlp_layers_to - 1
+    fusion_model.fusion_dict['trainable_mlp_all_layers'] = 0
+
+    for layer in fusion_model.mlp_decpt.hidden:
+        for param in layer.parameters():
+            if param.requires_grad:
+                fusion_model.fusion_dict['trainable_mlp_all_layers'] += 1
+                break
+
+    a = fusion_model.fusion_dict['trainable_mlp_all_layers']
+    b = fusion_model.fusion_dict['trainable_mlp_emb_layers']
+    assert a == b
+
+    # Chemception
+    for param in fusion_model.chemception.parameters():
+        param.requires_grad = False
+
+    return None
+
+
 def copy_freeze_parameters(model1, model2, model3,
                            emb_section=-1, emb_layer=-1):
     """

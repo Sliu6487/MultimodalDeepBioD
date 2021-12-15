@@ -33,3 +33,30 @@ def show_training_plots(model_number, train_history_dict,
 def print_hyper_parameters(config: dict):
     for item in config:
         print(f'{item} = {config[item]}')
+
+
+def merge_two_dict(dict1, dict2):
+    return dict1.update(dict2)
+
+
+def merge_all_dicts(dict_list):
+    full_dict = dict_list[0]
+    for i in range(1, len(dict_list)):
+        dict2 = dict_list[i]
+        merge_two_dict(full_dict, dict2)
+    return full_dict
+
+
+def get_best_models_5cv(model_number, search_hist):
+    search_err = {}
+    for key, value in search_hist.items():
+        if f'model{model_number}' in key:
+            search_err[key] = value['test_err']
+
+    best_search = min(search_err, key=search_err.get)
+    print("best_test_err:", search_hist[best_search]['test_err'])
+
+    best_models = search_hist[best_search]['trained_models_5cv']
+    best_hps = search_hist[best_search]['hps']
+
+    return best_models, best_hps

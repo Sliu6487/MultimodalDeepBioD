@@ -3,7 +3,7 @@ import torch
 
 def clf_err_rate(y_true, y_pred):
     """
-    classfication error rate in the paper has a mistake:
+    Classification error rate in the paper has a mistake:
     Er = 1 - (specificity - sensitivity)/2
     based on the cited paper, it should be:
     Er = 1 - (specificity + sensitivity)/2
