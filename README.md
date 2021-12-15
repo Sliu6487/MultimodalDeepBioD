@@ -1,3 +1,3 @@
 # MultimodalDeepBioD
 
-My personal research repo
+My personal reaserch repo
