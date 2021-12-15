@@ -70,6 +70,10 @@ class Chemception(nn.Module):
                 remain_section -= 1
 
         x = self.avg_pooling(x)
+        # todo: this doesn't work because the pooling kernel is decided by model1,
+        #  changing embedding layers later will not change the pooling size, so x's shape will change,
+        #  so the tensor shape stored in the memory will not match the new shape.
+        #  Keep the embedding within [-1, -3]
         x = x.view(x.size(0), -1)
         # print("x flatten:", x.shape[1:])
         return x

@@ -33,10 +33,12 @@ class Fusion_Model(nn.Module):
         # no harm factor
         self.nh_factor = nn.Parameter(torch.rand(1).to(self.device),
                                       requires_grad=True)
+
         self.nh_factor_mtrx = nn.Parameter(torch.rand(1, 126).to(self.device),
                                            requires_grad=True)
 
-        self.shrink_layer = nn.Linear(252, 126).to(self.device)
+        self.shrink_layer1 = nn.Linear(2, 1).to(self.device)
+        self.shrink_layer2 = nn.Linear(252, 126).to(self.device)
 
     def forward(self, x, y):
         chem_emb = self.chemception(x, self.emb_chemception_section)
@@ -49,12 +51,22 @@ class Fusion_Model(nn.Module):
         self.decpt_emb = decpt_emb
 
         if self.fusion == 'no_harm':
-            combined_emb = (1 - self.nh_factor) * chem_emb + self.nh_factor * decpt_emb
-            # print("combined_emb:", combined_emb.shape)
+            if chem_emb_neurons == decpt_emb_neurons:
+                combined_emb = (1 - self.nh_factor) * chem_emb + self.nh_factor * decpt_emb
+                # print("combined_emb:", combined_emb.shape)
+            else:
+                return None, None
 
         elif self.fusion == 'no_harm_matrix':
-            combined_emb = (1 - self.nh_factor_mtrx) * chem_emb + self.nh_factor_mtrx * decpt_emb
-            # print("combined_emb:", combined_emb.shape)
+            if chem_emb_neurons == decpt_emb_neurons:
+                if decpt_emb_neurons == 1:
+                    combined_emb = (1 - self.nh_factor_mtrx) * chem_emb + self.nh_factor_mtrx * decpt_emb
+                else:
+                    combined_emb = (1 - self.nh_factor) * chem_emb + self.nh_factor * decpt_emb
+
+                # print("combined_emb:", combined_emb.shape)
+            else:
+                return None, None
 
         elif self.fusion == 'no_model1':
             combined_emb = decpt_emb
@@ -63,23 +75,23 @@ class Fusion_Model(nn.Module):
         elif self.fusion == 'no_model2':
             combined_emb = chem_emb
 
-        elif self.fusion == 'half-half':
-            # sum
-            combined_emb = chem_emb + decpt_emb
-
         elif self.fusion == 'shrink':
             # print("chem_emb:", chem_emb.shape)
             # print("decpt_emb:", decpt_emb.shape)
             combined_emb = torch.cat((chem_emb, decpt_emb), 1)
             # print('combined_emb:', combined_emb.shape)
-            combined_emb = torch.relu(self.shrink_layer(combined_emb))
+            if decpt_emb_neurons == 126:
+                combined_emb = torch.relu(self.shrink_layer2(combined_emb))
+            elif decpt_emb_neurons == 1:
+                combined_emb = torch.relu(self.shrink_layer1(combined_emb))
+            else:
+                return None, None
 
         elif (self.fusion == 'avg'):
             if (chem_emb_neurons == decpt_emb_neurons):
                 combined_emb = (chem_emb + decpt_emb) / 2
             else:
-                warnings.warn("Mismatching shape, can't everage. Return None.")
-                return None
+                return None, None
 
         elif self.fusion == 'tf':
             chem_emb_h = torch.cat((torch.ones(chem_emb.shape[0], 1).to(self.device), chem_emb), dim=1)
